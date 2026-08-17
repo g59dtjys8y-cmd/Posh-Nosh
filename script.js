@@ -516,6 +516,8 @@ const els = {
   favoritesEmpty: $('#favoritesEmpty'),
   mineGrid: $('#mineGrid'),
   mineEmpty: $('#mineEmpty'),
+  mineActions: $('#mineActions'),
+  deleteAllBtn: $('#deleteAllBtn'),
   tabBtns: $$('.tab-btn'),
   views: $$('.view'),
   addRecipeFab: $('#addRecipeFab'),
@@ -546,6 +548,10 @@ const els = {
   formSave: $('#formSave'),
   formTitle: $('#formTitle'),
   recipeForm: $('#recipeForm'),
+  importSection: $('#importSection'),
+  importUrl: $('#importUrl'),
+  importFetchBtn: $('#importFetchBtn'),
+  importStatus: $('#importStatus'),
   fTitle: $('#fTitle'),
   fEmoji: $('#fEmoji'),
   fCategory: $('#fCategory'),
@@ -659,6 +665,7 @@ function renderMine() {
   els.mineGrid.innerHTML = '';
   state.customRecipes.forEach((r) => els.mineGrid.appendChild(buildCard(r)));
   els.mineEmpty.hidden = state.customRecipes.length > 0;
+  els.mineActions.hidden = state.customRecipes.length === 0;
 }
 
 function renderAll() {
@@ -795,6 +802,12 @@ function populateCategorySelect() {
 function openForm(editId) {
   state.editingRecipeId = editId || null;
   els.recipeForm.reset();
+
+  els.importSection.hidden = !!editId;
+  els.importUrl.value = '';
+  setImportStatus('');
+  els.importFetchBtn.disabled = false;
+  els.importFetchBtn.textContent = 'Fetch';
 
   if (editId) {
     const recipe = findRecipe(editId);
@@ -950,6 +963,87 @@ async function deleteRecipe(id) {
   closeDetail();
   renderAll();
   showToast('Recipe deleted');
+}
+
+async function deleteAllRecipes() {
+  const count = state.customRecipes.length;
+  if (count === 0) return;
+  if (!confirm(`Delete all ${count} of your recipe${count === 1 ? '' : 's'}? This can't be undone.`)) return;
+
+  const customIds = state.customRecipes.map((r) => r.id);
+
+  if (state.session) {
+    try {
+      const { error } = await db.from('recipes').delete().eq('user_id', state.session.user.id);
+      if (error) throw error;
+      await db.from('favorites').delete()
+        .eq('user_id', state.session.user.id).in('recipe_id', customIds);
+    } catch (err) {
+      showToast('Sync error — try again');
+      return;
+    }
+  }
+
+  state.customRecipes = [];
+  customIds.forEach((id) => state.favorites.delete(id));
+  if (!state.session) {
+    persistCustom();
+    persistFavorites();
+  }
+  renderAll();
+  showToast('All recipes deleted');
+}
+
+/* ---------------------------------------------------------------------- *
+ * Import from URL
+ * ---------------------------------------------------------------------- */
+
+function setImportStatus(message, kind) {
+  els.importStatus.textContent = message;
+  els.importStatus.hidden = !message;
+  els.importStatus.classList.toggle('is-error', kind === 'error');
+  els.importStatus.classList.toggle('is-ok', kind === 'ok');
+}
+
+async function handleImportFetch() {
+  const url = els.importUrl.value.trim();
+  if (!url) {
+    setImportStatus('Paste a recipe URL first', 'error');
+    return;
+  }
+  if (!db) {
+    setImportStatus('Connect a Supabase project to use URL import — see the README', 'error');
+    return;
+  }
+
+  els.importFetchBtn.disabled = true;
+  els.importFetchBtn.textContent = 'Fetching…';
+  setImportStatus('Fetching and reading the page…');
+
+  try {
+    const { data, error } = await db.functions.invoke('fetch-recipe', { body: { url } });
+    if (error) throw error;
+    if (data.error) {
+      setImportStatus(data.error, 'error');
+      return;
+    }
+
+    const recipe = data.recipe;
+    els.fTitle.value = recipe.title || '';
+    els.fPrep.value = recipe.prep || '';
+    els.fCook.value = recipe.cook || '';
+    els.fServings.value = recipe.servings || 4;
+    els.fIngredients.value = (recipe.ingredients || []).join('\n');
+    els.fSteps.value = (recipe.steps || []).join('\n');
+    els.fNotes.value = recipe.notes || '';
+
+    setImportStatus('Imported — review the fields below, then save.', 'ok');
+  } catch (err) {
+    setImportStatus('Something went wrong reaching that page. Try again, or enter the recipe manually.', 'error');
+  } finally {
+    els.importFetchBtn.disabled = false;
+    els.importFetchBtn.textContent = 'Fetch';
+  }
 }
 
 /* ---------------------------------------------------------------------- *
@@ -1139,6 +1233,7 @@ function init() {
 
   els.addRecipeFab.addEventListener('click', () => openForm(null));
   els.themeToggle.addEventListener('click', cycleTheme);
+  els.deleteAllBtn.addEventListener('click', deleteAllRecipes);
 
   els.detailClose.addEventListener('click', closeDetail);
   els.detailFavToggle.addEventListener('click', () => toggleFavorite(state.activeRecipeId));
@@ -1150,6 +1245,7 @@ function init() {
   els.formClose.addEventListener('click', closeForm);
   els.formSave.addEventListener('click', saveForm);
   els.recipeForm.addEventListener('submit', (e) => { e.preventDefault(); saveForm(); });
+  els.importFetchBtn.addEventListener('click', handleImportFetch);
 
   els.authForm.addEventListener('submit', handleSignIn);
   els.authSignUp.addEventListener('click', handleSignUp);

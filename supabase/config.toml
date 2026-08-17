@@ -1,0 +1,4 @@
+[functions.fetch-recipe]
+# No database access, no user data touched — just fetches a URL and parses
+# it. Safe to leave open rather than requiring a signed-in JWT.
+verify_jwt = false

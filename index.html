@@ -51,6 +51,9 @@
   </section>
 
   <section id="view-mine" class="view" data-view="mine" hidden>
+    <div class="mine-actions" id="mineActions" hidden>
+      <button type="button" class="text-btn danger-text-btn" id="deleteAllBtn">Delete All</button>
+    </div>
     <div class="empty-state" id="mineEmpty" hidden>
       <p>You haven't added any recipes yet.</p>
     </div>
@@ -193,6 +196,17 @@
       </button>
       <h1 class="form-title" id="formTitle">New recipe</h1>
       <button class="text-btn" id="formSave" type="button">Save</button>
+    </div>
+
+    <div class="import-section" id="importSection" hidden>
+      <label class="field">
+        <span>Import from a recipe URL <small>optional — fills in the fields below for you to review</small></span>
+        <div class="import-row">
+          <input type="url" id="importUrl" placeholder="https://example.com/some-recipe" inputmode="url" autocapitalize="off" autocorrect="off">
+          <button type="button" id="importFetchBtn" class="primary-btn">Fetch</button>
+        </div>
+      </label>
+      <p class="import-status" id="importStatus" hidden></p>
     </div>
 
     <form id="recipeForm" novalidate>

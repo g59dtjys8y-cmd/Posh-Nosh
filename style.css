@@ -143,6 +143,7 @@ input, select, textarea {
   background: transparent;
   color: var(--text);
 }
+.icon-btn[hidden] { display: none; }
 
 .icon-btn:hover { background: var(--bg-sunken); }
 .icon-btn:active { transform: scale(0.94); }
@@ -217,6 +218,19 @@ input, select, textarea {
   text-align: center;
   padding: 48px 20px;
   color: var(--text-muted);
+}
+
+.mine-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 4px;
+}
+.mine-actions[hidden] { display: none; }
+
+.danger-text-btn {
+  color: var(--danger);
+  font-size: 13px;
+  padding: 6px 4px;
 }
 
 /* ---------- Recipe grid / cards ---------- */
@@ -590,6 +604,45 @@ input, select, textarea {
 /* ---------- Form ---------- */
 
 .form-title { font-size: 17px; }
+
+.import-section {
+  padding: 16px 16px 0;
+}
+
+.import-row {
+  display: flex;
+  gap: 8px;
+}
+
+.import-row input {
+  flex: 1;
+  border: 1px solid var(--border);
+  background: var(--bg-elevated);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  font-size: 15px;
+  color: var(--text);
+  outline: none;
+}
+.import-row input:focus { border-color: var(--accent); }
+
+.import-row .primary-btn {
+  flex-shrink: 0;
+  padding: 10px 18px;
+  font-size: 14px;
+}
+.import-row .primary-btn:disabled {
+  opacity: 0.6;
+  background: var(--accent);
+}
+
+.import-status {
+  font-size: 13px;
+  margin: 8px 0 0;
+  color: var(--text-muted);
+}
+.import-status.is-error { color: var(--danger); }
+.import-status.is-ok { color: var(--accent); }
 
 #recipeForm {
   padding: 16px;
