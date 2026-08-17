@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Posh Nosh — Recipe Book</title>
+<meta name="description" content="A tidy, offline-friendly recipe book: browse, search, scale servings, and save your own recipes.">
+<meta name="theme-color" content="#c1502e">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="app-header">
+  <div class="brand">
+    <img src="icon.svg" alt="" class="brand-mark" width="28" height="28">
+    <span class="brand-name">Posh Nosh</span>
+  </div>
+  <button id="themeToggle" class="icon-btn" type="button" aria-label="Toggle theme" title="Toggle theme">
+    <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M12 3a9 9 0 1 0 9 9c0-.46-.04-.92-.1-1.36a5.4 5.4 0 0 1-7.54-7.54A9.03 9.03 0 0 0 12 3z" fill="currentColor"/></svg>
+  </button>
+</header>
+
+<main class="app-main">
+
+  <section id="view-browse" class="view" data-view="browse">
+    <div class="search-row">
+      <div class="search-box">
+        <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M10 4a6 6 0 1 0 3.76 10.68l4.78 4.78 1.41-1.41-4.78-4.78A6 6 0 0 0 10 4zm-4 6a4 4 0 1 1 8 0 4 4 0 0 1-8 0z" fill="currentColor"/></svg>
+        <input id="searchInput" type="search" placeholder="Search recipes or ingredients…" aria-label="Search recipes">
+      </div>
+    </div>
+
+    <div class="chip-row" id="categoryChips" role="group" aria-label="Filter by category"></div>
+
+    <div class="empty-state" id="browseEmpty" hidden>
+      <p>No recipes match your search.</p>
+    </div>
+
+    <div class="recipe-grid" id="browseGrid"></div>
+  </section>
+
+  <section id="view-favorites" class="view" data-view="favorites" hidden>
+    <div class="empty-state" id="favoritesEmpty" hidden>
+      <p>No favorites yet. Tap the ♡ on any recipe to save it here.</p>
+    </div>
+    <div class="recipe-grid" id="favoritesGrid"></div>
+  </section>
+
+  <section id="view-mine" class="view" data-view="mine" hidden>
+    <div class="empty-state" id="mineEmpty" hidden>
+      <p>You haven't added any recipes yet.</p>
+    </div>
+    <div class="recipe-grid" id="mineGrid"></div>
+  </section>
+
+</main>
+
+<button id="addRecipeFab" class="fab" type="button" aria-label="Add a recipe" title="Add a recipe">
+  <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><path d="M11 5h2v6h6v2h-6v6h-2v-6H5v-2h6V5z" fill="currentColor"/></svg>
+</button>
+
+<nav class="tab-bar" aria-label="Main navigation">
+  <button class="tab-btn is-active" data-view="browse" type="button">
+    <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M4 4h7v7H4V4zm9 0h7v7h-7V4zM4 13h7v7H4v-7zm9 0h7v7h-7v-7z" fill="currentColor"/></svg>
+    <span>Browse</span>
+  </button>
+  <button class="tab-btn" data-view="favorites" type="button">
+    <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M12 21s-6.7-4.35-9.3-8.2C1 10.1 1.6 6.6 4.6 5.1c2.2-1.1 4.6-.3 5.9 1.6l1.5 2 1.5-2c1.3-1.9 3.7-2.7 5.9-1.6 3 1.5 3.6 5 1.9 7.7C18.7 16.65 12 21 12 21z" fill="currentColor"/></svg>
+    <span>Favorites</span>
+  </button>
+  <button class="tab-btn" data-view="mine" type="button">
+    <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M12 2a5 5 0 0 1 5 5c0 2.2-1.4 4.1-3.4 4.7L15 21H9l1.4-9.3C8.4 11.1 7 9.2 7 7a5 5 0 0 1 5-5z" fill="currentColor"/></svg>
+    <span>My Recipes</span>
+  </button>
+</nav>
+
+<!-- Recipe detail overlay -->
+<div id="detailOverlay" class="overlay" hidden>
+  <div class="overlay-panel detail-panel">
+    <div class="overlay-topbar">
+      <button class="icon-btn back-btn" id="detailClose" type="button" aria-label="Close">
+        <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z" fill="currentColor"/></svg>
+      </button>
+      <div class="overlay-topbar-actions">
+        <button class="icon-btn" id="detailFavToggle" type="button" aria-label="Toggle favorite">
+          <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M12 21s-6.7-4.35-9.3-8.2C1 10.1 1.6 6.6 4.6 5.1c2.2-1.1 4.6-.3 5.9 1.6l1.5 2 1.5-2c1.3-1.9 3.7-2.7 5.9-1.6 3 1.5 3.6 5 1.9 7.7C18.7 16.65 12 21 12 21z" fill="currentColor"/></svg>
+        </button>
+        <button class="icon-btn" id="detailEdit" type="button" aria-label="Edit recipe" hidden>
+          <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z" fill="currentColor"/></svg>
+        </button>
+        <button class="icon-btn" id="detailDelete" type="button" aria-label="Delete recipe" hidden>
+          <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M6 7h12l-1 14H7L6 7zm3-4h6l1 2h4v2H2V5h4l1-2z" fill="currentColor"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <div class="detail-hero">
+      <span class="detail-emoji" id="detailEmoji">🍽️</span>
+      <h1 id="detailTitle">Recipe title</h1>
+      <p class="detail-category" id="detailCategory">Category</p>
+      <div class="detail-tags" id="detailTags"></div>
+    </div>
+
+    <div class="detail-meta">
+      <div class="meta-item">
+        <span class="meta-label">Prep</span>
+        <span class="meta-value" id="detailPrep">–</span>
+      </div>
+      <div class="meta-item">
+        <span class="meta-label">Cook</span>
+        <span class="meta-value" id="detailCook">–</span>
+      </div>
+      <div class="meta-item">
+        <span class="meta-label">Difficulty</span>
+        <span class="meta-value" id="detailDifficulty">–</span>
+      </div>
+    </div>
+
+    <div class="servings-control">
+      <span class="servings-label">Servings</span>
+      <div class="stepper">
+        <button id="servingsMinus" type="button" aria-label="Decrease servings">−</button>
+        <span id="servingsValue">4</span>
+        <button id="servingsPlus" type="button" aria-label="Increase servings">+</button>
+      </div>
+    </div>
+
+    <div class="detail-section">
+      <h2>Ingredients</h2>
+      <ul class="ingredient-list" id="detailIngredients"></ul>
+    </div>
+
+    <div class="detail-section">
+      <h2>Method</h2>
+      <ol class="step-list" id="detailSteps"></ol>
+    </div>
+
+    <div class="detail-section" id="detailNotesSection" hidden>
+      <h2>Notes</h2>
+      <p class="detail-notes" id="detailNotes"></p>
+    </div>
+  </div>
+</div>
+
+<!-- Add/edit recipe overlay -->
+<div id="formOverlay" class="overlay" hidden>
+  <div class="overlay-panel form-panel">
+    <div class="overlay-topbar">
+      <button class="icon-btn back-btn" id="formClose" type="button" aria-label="Cancel">
+        <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M18.3 5.71 12 12l6.3 6.29-1.41 1.42L10.59 13.4 4.3 19.71 2.89 18.3 9.17 12 2.89 5.71 4.3 4.29l6.29 6.3 6.3-6.3z" fill="currentColor"/></svg>
+      </button>
+      <h1 class="form-title" id="formTitle">New recipe</h1>
+      <button class="text-btn" id="formSave" type="button">Save</button>
+    </div>
+
+    <form id="recipeForm" novalidate>
+      <label class="field">
+        <span>Title</span>
+        <input type="text" id="fTitle" required placeholder="e.g. Sunday Roast Chicken">
+      </label>
+
+      <label class="field">
+        <span>Emoji icon</span>
+        <input type="text" id="fEmoji" maxlength="4" placeholder="🍗">
+      </label>
+
+      <label class="field">
+        <span>Category</span>
+        <select id="fCategory"></select>
+      </label>
+
+      <label class="field">
+        <span>Tags <small>(comma separated)</small></span>
+        <input type="text" id="fTags" placeholder="vegetarian, quick, freezer-friendly">
+      </label>
+
+      <div class="field-row">
+        <label class="field">
+          <span>Prep (min)</span>
+          <input type="number" id="fPrep" min="0" inputmode="numeric">
+        </label>
+        <label class="field">
+          <span>Cook (min)</span>
+          <input type="number" id="fCook" min="0" inputmode="numeric">
+        </label>
+      </div>
+
+      <div class="field-row">
+        <label class="field">
+          <span>Servings</span>
+          <input type="number" id="fServings" min="1" value="4" inputmode="numeric">
+        </label>
+        <label class="field">
+          <span>Difficulty</span>
+          <select id="fDifficulty">
+            <option>Easy</option>
+            <option>Medium</option>
+            <option>Hard</option>
+          </select>
+        </label>
+      </div>
+
+      <div class="field">
+        <span>Ingredients <small>one per line, e.g. "2 cups flour"</small></span>
+        <textarea id="fIngredients" rows="6" placeholder="2 cups flour&#10;1 tsp salt&#10;3 eggs"></textarea>
+      </div>
+
+      <div class="field">
+        <span>Method <small>one step per line</small></span>
+        <textarea id="fSteps" rows="6" placeholder="Preheat oven to 200°C&#10;Mix dry ingredients&#10;..."></textarea>
+      </div>
+
+      <label class="field">
+        <span>Notes <small>optional</small></span>
+        <textarea id="fNotes" rows="3" placeholder="Tips, substitutions, storage…"></textarea>
+      </label>
+    </form>
+  </div>
+</div>
+
+<div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+
+<script src="script.js"></script>
+</body>
+</html>
