@@ -4,7 +4,7 @@ A tidy, offline-friendly recipe book. Browse a starter collection of recipes, se
 
 Works fully offline out of the box, with everything stored on your device. Optionally connect a free [Supabase](https://supabase.com) project to sign in and sync your recipes and favorites across every device you use.
 
-**Live app:** installable as a PWA — open `index.html` on GitHub Pages (or any static host) and "Add to Home Screen."
+**Live app:** https://g59dtjys8y-cmd.github.io/Posh-Nosh/ — installable as a PWA, "Add to Home Screen."
 
 ## Features
 
