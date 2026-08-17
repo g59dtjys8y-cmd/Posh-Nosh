@@ -13,6 +13,14 @@ Consequences for future changes:
 - Don't cache requests carrying an `Authorization` header (Supabase auth/REST calls). Caching is keyed by URL, not by signed-in user, so on a shared device a cached response could otherwise leak one user's data to the next person who opens the app.
 - After deploying an `sw.js` change, expect a one-time lag: a visitor's *first* reload lets the browser discover and install the new worker, and only the *second* reload (or a fresh tab) is actually served by it, because the page already in memory keeps running under whichever worker was in control when it loaded.
 
+## The `hidden` attribute vs. CSS `display`
+
+Never give a selector an unconditional `display: flex/grid/block/...` if any element matching it is ever toggled via the `hidden` HTML attribute (`el.hidden = true`, or `<div hidden>`). The browser's own default styling for `[hidden]` is just `display: none`, at the same specificity as a plain class selector (0-1-0) — and author stylesheets always beat the user-agent stylesheet at equal specificity, regardless of which rule is written first in the file. So a rule like `.mine-actions { display: flex; }` silently makes the `hidden` attribute do nothing at all on that element: it's still attribute-present, still fails `:visible` checks in some tooling, but it renders as if never hidden.
+
+This bit twice in one pass: `.icon-btn` (used by the recipe-detail Edit/Delete buttons, toggled via `els.detailEdit.hidden`/`els.detailDelete.hidden`) had this exact bug since the app's first version — Edit/Delete were visible on every recipe detail page, including the built-in seed recipes, the entire time. `.mine-actions` (the "Delete All" button's wrapper) had the same bug the moment it was added.
+
+Fix: whenever a class rule sets `display` and an element with that class also gets `.hidden` toggled in JS, add an explicit override: `.the-class[hidden] { display: none; }`. Classes that never set `display` (letting the element's default block/inline stand) don't need this — the UA default just applies normally. When adding any new hide/show toggle, grep for `els.<name>.hidden =` and check the CSS for the class in question rather than assuming `hidden` "just works."
+
 ## General
 
 This app intentionally mirrors patterns from the sibling repo `g59dtjys8y-cmd/schengen-guard-anywhere` (same author, same Supabase-backed sync approach, same service worker strategy) — when in doubt about how something here should work, that repo is worth checking for precedent.
