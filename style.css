@@ -638,6 +638,77 @@ input, select, textarea {
 }
 .field-row .field { flex: 1; }
 
+/* ---------- Account ---------- */
+
+.account-card {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+  box-shadow: var(--shadow);
+}
+
+.account-card h2 {
+  font-size: 19px;
+  margin-bottom: 8px;
+}
+
+.account-card p {
+  font-size: 14px;
+  color: var(--text-muted);
+  line-height: 1.5;
+  margin: 0 0 16px;
+}
+
+.account-card #authForm {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.account-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.primary-btn {
+  border: none;
+  background: var(--accent);
+  color: var(--accent-contrast);
+  font-weight: 700;
+  font-size: 15px;
+  padding: 11px 20px;
+  border-radius: var(--radius-sm);
+}
+.primary-btn:hover { background: var(--accent-hover); }
+.primary-btn:active { transform: scale(0.98); }
+
+.primary-btn-outline {
+  background: transparent;
+  border: 1.5px solid var(--accent);
+  color: var(--accent);
+}
+.primary-btn-outline:hover { background: var(--accent-soft); }
+
+.account-status {
+  font-size: 13px;
+  margin: -4px 0 0;
+}
+.account-status.is-error { color: var(--danger); }
+.account-status.is-ok { color: var(--accent); }
+
+.account-email {
+  font-weight: 700;
+  color: var(--text);
+  font-size: 15px;
+}
+
+.account-sync-note {
+  font-size: 13px;
+}
+
 /* ---------- Toast ---------- */
 
 .toast {

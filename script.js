@@ -1,6 +1,20 @@
 'use strict';
 
 /* ---------------------------------------------------------------------- *
+ * Supabase — optional cloud sync
+ * Replace these with your own project's values (Settings → API) to enable
+ * sign-in and cross-device sync. Left as placeholders, the app runs fully
+ * offline on local storage. See README.md for setup steps.
+ * ---------------------------------------------------------------------- */
+
+const SUPABASE_URL = 'https://YOUR-PROJECT.supabase.co';
+const SUPABASE_KEY = 'YOUR-ANON-KEY';
+const SUPABASE_CONFIGURED = !SUPABASE_URL.includes('YOUR-PROJECT') && !SUPABASE_KEY.includes('YOUR-ANON-KEY');
+const db = SUPABASE_CONFIGURED && window.supabase
+  ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY)
+  : null;
+
+/* ---------------------------------------------------------------------- *
  * Constants & storage helpers
  * ---------------------------------------------------------------------- */
 
@@ -421,6 +435,7 @@ const state = {
   activeRecipeId: null,
   activeServings: null,
   editingRecipeId: null,
+  session: null,
 };
 
 function allRecipes() {
@@ -432,7 +447,7 @@ function findRecipe(id) {
 }
 
 function isCustom(id) {
-  return id.startsWith('custom-');
+  return !SEED_RECIPES.some((r) => r.id === id);
 }
 
 function persistFavorites() {
@@ -544,6 +559,19 @@ const els = {
   fNotes: $('#fNotes'),
 
   toast: $('#toast'),
+
+  accountUnconfigured: $('#accountUnconfigured'),
+  accountSignedOut: $('#accountSignedOut'),
+  accountSignedIn: $('#accountSignedIn'),
+  accountEmail: $('#accountEmail'),
+  accountTabLabel: $('#accountTabLabel'),
+  authForm: $('#authForm'),
+  authEmail: $('#authEmail'),
+  authPassword: $('#authPassword'),
+  authSignIn: $('#authSignIn'),
+  authSignUp: $('#authSignUp'),
+  authSignOut: $('#authSignOut'),
+  authStatus: $('#authStatus'),
 };
 
 /* ---------------------------------------------------------------------- *
@@ -649,13 +677,28 @@ function escapeHTML(str) {
  * Favorites
  * ---------------------------------------------------------------------- */
 
-function toggleFavorite(id) {
-  if (state.favorites.has(id)) {
-    state.favorites.delete(id);
-  } else {
-    state.favorites.add(id);
+async function toggleFavorite(id) {
+  const wasFav = state.favorites.has(id);
+
+  if (state.session) {
+    try {
+      if (wasFav) {
+        const { error } = await db.from('favorites').delete()
+          .eq('user_id', state.session.user.id).eq('recipe_id', id);
+        if (error) throw error;
+      } else {
+        const { error } = await db.from('favorites')
+          .insert({ user_id: state.session.user.id, recipe_id: id });
+        if (error) throw error;
+      }
+    } catch (err) {
+      showToast('Sync error — try again');
+      return;
+    }
   }
-  persistFavorites();
+
+  if (wasFav) state.favorites.delete(id); else state.favorites.add(id);
+  if (!state.session) persistFavorites();
   renderAll();
   if (state.activeRecipeId === id) updateDetailFavIcon(id);
 }
@@ -812,7 +855,7 @@ function parseIngredientLine(line) {
   return { qty, unit: unit || '', name: name.trim() };
 }
 
-function saveForm() {
+async function saveForm() {
   const title = els.fTitle.value.trim();
   if (!title) {
     els.fTitle.focus();
@@ -828,8 +871,7 @@ function saveForm() {
     return;
   }
 
-  const recipe = {
-    id: state.editingRecipeId || `custom-${Date.now()}`,
+  const payload = {
     title,
     emoji: els.fEmoji.value.trim() || '🍽️',
     category: els.fCategory.value,
@@ -844,26 +886,67 @@ function saveForm() {
   };
 
   const wasEditing = state.editingRecipeId;
-  if (wasEditing) {
-    const idx = state.customRecipes.findIndex((r) => r.id === wasEditing);
-    if (idx !== -1) state.customRecipes[idx] = recipe;
+  let saved;
+
+  if (state.session) {
+    try {
+      if (wasEditing) {
+        const { data, error } = await db.from('recipes').update(payload)
+          .eq('id', wasEditing).select().single();
+        if (error) throw error;
+        saved = data;
+        const idx = state.customRecipes.findIndex((r) => r.id === wasEditing);
+        if (idx !== -1) state.customRecipes[idx] = saved;
+      } else {
+        const { data, error } = await db.from('recipes')
+          .insert({ ...payload, user_id: state.session.user.id }).select().single();
+        if (error) throw error;
+        saved = data;
+        state.customRecipes.push(saved);
+      }
+    } catch (err) {
+      showToast('Sync error — try again');
+      return;
+    }
   } else {
-    state.customRecipes.push(recipe);
+    saved = { id: wasEditing || `custom-${Date.now()}`, ...payload };
+    if (wasEditing) {
+      const idx = state.customRecipes.findIndex((r) => r.id === wasEditing);
+      if (idx !== -1) state.customRecipes[idx] = saved;
+    } else {
+      state.customRecipes.push(saved);
+    }
+    persistCustom();
   }
-  persistCustom();
+
   closeForm();
   renderAll();
   showToast(wasEditing ? 'Recipe updated' : 'Recipe added');
-  if (wasEditing) openDetail(recipe.id);
+  if (wasEditing) openDetail(saved.id);
 }
 
-function deleteRecipe(id) {
+async function deleteRecipe(id) {
   if (!isCustom(id)) return;
   if (!confirm('Delete this recipe? This can\'t be undone.')) return;
+
+  if (state.session) {
+    try {
+      const { error } = await db.from('recipes').delete().eq('id', id);
+      if (error) throw error;
+      await db.from('favorites').delete()
+        .eq('user_id', state.session.user.id).eq('recipe_id', id);
+    } catch (err) {
+      showToast('Sync error — try again');
+      return;
+    }
+  }
+
   state.customRecipes = state.customRecipes.filter((r) => r.id !== id);
   state.favorites.delete(id);
-  persistCustom();
-  persistFavorites();
+  if (!state.session) {
+    persistCustom();
+    persistFavorites();
+  }
   closeDetail();
   renderAll();
   showToast('Recipe deleted');
@@ -902,6 +985,139 @@ function cycleTheme() {
 }
 
 /* ---------------------------------------------------------------------- *
+ * Account / cloud sync
+ * ---------------------------------------------------------------------- */
+
+function setAuthStatus(message, kind) {
+  els.authStatus.textContent = message;
+  els.authStatus.hidden = !message;
+  els.authStatus.classList.toggle('is-error', kind === 'error');
+  els.authStatus.classList.toggle('is-ok', kind === 'ok');
+}
+
+function renderAccountView() {
+  const signedIn = !!state.session;
+  els.accountUnconfigured.hidden = SUPABASE_CONFIGURED;
+  els.accountSignedOut.hidden = !SUPABASE_CONFIGURED || signedIn;
+  els.accountSignedIn.hidden = !SUPABASE_CONFIGURED || !signedIn;
+  els.accountTabLabel.textContent = signedIn ? 'Synced' : 'Account';
+  if (signedIn) {
+    els.accountEmail.textContent = state.session.user.email;
+  }
+}
+
+/** Loads this user's recipes and favorites from Supabase into state, replacing any local-only data cache in memory. */
+async function loadCloudData() {
+  const [{ data: recipes, error: recipesErr }, { data: favs, error: favsErr }] = await Promise.all([
+    db.from('recipes').select('*').order('created_at', { ascending: true }),
+    db.from('favorites').select('recipe_id'),
+  ]);
+  if (recipesErr || favsErr) {
+    showToast('Could not load your synced data');
+    return;
+  }
+  state.customRecipes = recipes || [];
+  state.favorites = new Set((favs || []).map((f) => f.recipe_id));
+}
+
+/** Offers to copy any device-local recipes/favorites up to the signed-in account, once. */
+async function maybeMigrateLocalToCloud() {
+  const localRecipes = loadJSON(STORAGE_KEYS.custom, []);
+  const localFavIds = loadJSON(STORAGE_KEYS.favorites, []);
+  if (localRecipes.length === 0 && localFavIds.length === 0) return;
+
+  const proceed = confirm(
+    `You have ${localRecipes.length} local recipe(s) and ${localFavIds.length} favorite(s) saved on this device. Import them into your account?`
+  );
+  if (!proceed) return;
+
+  const idMap = {};
+  for (const r of localRecipes) {
+    const { id, ...payload } = r;
+    const { data, error } = await db.from('recipes')
+      .insert({ ...payload, user_id: state.session.user.id }).select().single();
+    if (!error && data) idMap[id] = data.id;
+  }
+
+  const favRows = localFavIds.map((fid) => ({
+    user_id: state.session.user.id,
+    recipe_id: idMap[fid] || fid,
+  }));
+  if (favRows.length) {
+    await db.from('favorites').upsert(favRows, { onConflict: 'user_id,recipe_id' });
+  }
+
+  localStorage.removeItem(STORAGE_KEYS.custom);
+  localStorage.removeItem(STORAGE_KEYS.favorites);
+  showToast('Local recipes imported');
+}
+
+async function onAuthStateResolved(session) {
+  const gainedSession = !state.session && !!session;
+  state.session = session;
+  renderAccountView();
+
+  if (gainedSession) {
+    await maybeMigrateLocalToCloud();
+    await loadCloudData();
+  } else if (!session) {
+    state.customRecipes = loadJSON(STORAGE_KEYS.custom, []);
+    state.favorites = new Set(loadJSON(STORAGE_KEYS.favorites, []));
+  }
+  renderAll();
+}
+
+async function initAuth() {
+  renderAccountView();
+  if (!SUPABASE_CONFIGURED) return;
+
+  const { data: { session } } = await db.auth.getSession();
+  await onAuthStateResolved(session);
+
+  db.auth.onAuthStateChange((_event, session) => {
+    onAuthStateResolved(session);
+  });
+}
+
+async function handleSignIn(e) {
+  e.preventDefault();
+  const email = els.authEmail.value.trim();
+  const password = els.authPassword.value;
+  if (!email || !password) return;
+  setAuthStatus('Signing in…');
+  const { error } = await db.auth.signInWithPassword({ email, password });
+  if (error) {
+    setAuthStatus(error.message, 'error');
+  } else {
+    setAuthStatus('');
+    els.authForm.reset();
+  }
+}
+
+async function handleSignUp() {
+  const email = els.authEmail.value.trim();
+  const password = els.authPassword.value;
+  if (!email || !password) {
+    setAuthStatus('Enter an email and password first', 'error');
+    return;
+  }
+  setAuthStatus('Creating account…');
+  const { data, error } = await db.auth.signUp({ email, password });
+  if (error) {
+    setAuthStatus(error.message, 'error');
+  } else if (!data.session) {
+    setAuthStatus('Check your email to confirm your account', 'ok');
+  } else {
+    setAuthStatus('');
+    els.authForm.reset();
+  }
+}
+
+async function handleSignOut() {
+  await db.auth.signOut();
+}
+
+/* ---------------------------------------------------------------------- *
  * Event wiring
  * ---------------------------------------------------------------------- */
 
@@ -910,6 +1126,7 @@ function init() {
   renderCategoryChips();
   renderAll();
   applyTheme(localStorage.getItem(STORAGE_KEYS.theme) || 'auto');
+  initAuth();
 
   els.searchInput.addEventListener('input', (e) => {
     state.searchTerm = e.target.value;
@@ -933,6 +1150,10 @@ function init() {
   els.formClose.addEventListener('click', closeForm);
   els.formSave.addEventListener('click', saveForm);
   els.recipeForm.addEventListener('submit', (e) => { e.preventDefault(); saveForm(); });
+
+  els.authForm.addEventListener('submit', handleSignIn);
+  els.authSignUp.addEventListener('click', handleSignUp);
+  els.authSignOut.addEventListener('click', handleSignOut);
 
   document.addEventListener('keydown', (e) => {
     if (e.key !== 'Escape') return;
