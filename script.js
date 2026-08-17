@@ -8,8 +8,8 @@
  * ---------------------------------------------------------------------- */
 
 const SUPABASE_URL = 'https://ztvingythtzyvcpzcnsq.supabase.co';
-const SUPABASE_KEY = sb_publishable_dxhK5fsYXDNuFSVXJo1Sug_sX-NeXyf;
-const SUPABASE_CONFIGURED = !SUPABASE_URL.includes('YOUR-PROJECT') && !SUPABASE_KEY.includes(sb_publishable_dxhK5fsYXDNuFSVXJo1Sug_sX-NeXyf);
+const SUPABASE_KEY = 'sb_publishable_dxhK5fsYXDNuFSVXJo1Sug_sX-NeXyf';
+const SUPABASE_CONFIGURED = !SUPABASE_URL.includes('YOUR-PROJECT') && !SUPABASE_KEY.includes('YOUR-ANON-KEY');
 const db = SUPABASE_CONFIGURED && window.supabase
   ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY)
   : null;
@@ -997,9 +997,9 @@ function setAuthStatus(message, kind) {
 
 function renderAccountView() {
   const signedIn = !!state.session;
-  els.accountUnconfigured.hidden = SUPABASE_CONFIGURED;
-  els.accountSignedOut.hidden = !SUPABASE_CONFIGURED || signedIn;
-  els.accountSignedIn.hidden = !SUPABASE_CONFIGURED || !signedIn;
+  els.accountUnconfigured.hidden = !!db;
+  els.accountSignedOut.hidden = !db || signedIn;
+  els.accountSignedIn.hidden = !db || !signedIn;
   els.accountTabLabel.textContent = signedIn ? 'Synced' : 'Account';
   if (signedIn) {
     els.accountEmail.textContent = state.session.user.email;
@@ -1069,7 +1069,7 @@ async function onAuthStateResolved(session) {
 
 async function initAuth() {
   renderAccountView();
-  if (!SUPABASE_CONFIGURED) return;
+  if (!db) return;
 
   const { data: { session } } = await db.auth.getSession();
   await onAuthStateResolved(session);
