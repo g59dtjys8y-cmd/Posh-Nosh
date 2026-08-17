@@ -8,8 +8,8 @@
  * ---------------------------------------------------------------------- */
 
 const SUPABASE_URL = 'https://YOUR-PROJECT.supabase.co';
-const SUPABASE_KEY = 'YOUR-ANON-KEY';
-const SUPABASE_CONFIGURED = !SUPABASE_URL.includes('YOUR-PROJECT') && !SUPABASE_KEY.includes('YOUR-ANON-KEY');
+const SUPABASE_KEY = sb_publishable_dxhK5fsYXDNuFSVXJo1Sug_sX-NeXyf;
+const SUPABASE_CONFIGURED = !SUPABASE_URL.includes('YOUR-PROJECT') && !SUPABASE_KEY.includes(sb_publishable_dxhK5fsYXDNuFSVXJo1Sug_sX-NeXyf);
 const db = SUPABASE_CONFIGURED && window.supabase
   ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY)
   : null;
