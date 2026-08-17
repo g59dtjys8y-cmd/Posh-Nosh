@@ -7,7 +7,7 @@
  * offline on local storage. See README.md for setup steps.
  * ---------------------------------------------------------------------- */
 
-const SUPABASE_URL = 'https://YOUR-PROJECT.supabase.co';
+const SUPABASE_URL = 'https://ztvingythtzyvcpzcnsq.supabase.co';
 const SUPABASE_KEY = sb_publishable_dxhK5fsYXDNuFSVXJo1Sug_sX-NeXyf;
 const SUPABASE_CONFIGURED = !SUPABASE_URL.includes('YOUR-PROJECT') && !SUPABASE_KEY.includes(sb_publishable_dxhK5fsYXDNuFSVXJo1Sug_sX-NeXyf);
 const db = SUPABASE_CONFIGURED && window.supabase
