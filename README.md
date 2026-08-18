@@ -1,6 +1,6 @@
 # Posh Nosh
 
-A tidy, offline-friendly recipe book. Browse a starter collection of recipes, search by name or ingredient, filter by category, scale servings up or down, save favorites, and add your own recipes.
+A tidy, offline-friendly recipe book for your own recipes. Search by name or ingredient, filter by category, scale servings up or down, save favorites, and import from a recipe link or add your own.
 
 Works fully offline out of the box, with everything stored on your device. Optionally connect a free [Supabase](https://supabase.com) project to sign in and sync your recipes and favorites across every device you use.
 
@@ -8,9 +8,9 @@ Works fully offline out of the box, with everything stored on your device. Optio
 
 ## Features
 
-- **Browse** — a seeded collection across Breakfast, Mains, Sides, Desserts, Drinks, and Snacks, with search across titles, tags, and ingredients, plus category filter chips.
+- **Browse** — every recipe you've added, across Breakfast, Mains, Sides, Desserts, Drinks, and Snacks, with search across titles, tags, and ingredients, plus category filter chips. Starts empty — add your first recipe from the + button or the Import from a URL feature below.
 - **Recipe detail** — ingredients, step-by-step method, prep/cook time, difficulty, and notes, with a servings stepper that live-scales every ingredient quantity.
-- **Favorites** — tap the heart on any recipe (seeded or your own) to save it to a dedicated Favorites tab.
+- **Favorites** — tap the heart on any recipe to save it to a dedicated Favorites tab.
 - **My Recipes** — add, edit, or delete your own recipes from a simple form (title, category, tags, times, servings, ingredients, method, notes), with a "Delete All" option to clear every recipe you've added.
 - **Import from a URL (optional)** — on the add-recipe form, paste a link to a recipe blog post and tap Fetch to pull in the title, ingredients, method, times, and servings automatically, for you to review before saving. Works on sites that embed structured recipe data (most SEO-focused recipe blogs do, for Google's rich search results) — not on social media, which doesn't expose recipe data this way. Requires a connected Supabase project (see below), since fetching another site's page has to happen server-side.
 - **Account sync (optional)** — sign in with email/password to store your recipes and favorites in a Supabase Postgres database tied to your account, scoped by Row Level Security, and available on every device you sign into. If you have local recipes saved when you first sign in, you're offered a one-time import into your account. Without a configured Supabase project, the app runs entirely on local storage — no account needed.
@@ -29,7 +29,7 @@ Works fully offline out of the box, with everything stored on your device. Optio
 |---|---|
 | `index.html` | Page structure: browse/favorites/mine/account tabs, recipe detail overlay, add/edit form overlay |
 | `style.css` | All styling, including the light/dark theme system |
-| `script.js` | App logic: seed recipe data, rendering, search/filter, favorites, servings scaling, add/edit/delete, Supabase auth + sync, local persistence |
+| `script.js` | App logic: rendering, search/filter, favorites, servings scaling, add/edit/delete, URL import, Supabase auth + sync, local persistence |
 | `manifest.json` | PWA metadata (name, icons, theme colors) |
 | `sw.js` | Service worker for app-shell offline caching and installability |
 | `icon.svg` / `icon-192.png` / `icon-512.png` | App icons |

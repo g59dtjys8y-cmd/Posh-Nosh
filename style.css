@@ -112,6 +112,10 @@ input, select, textarea {
   background: color-mix(in srgb, var(--bg) 88%, transparent);
   backdrop-filter: blur(10px);
   border-bottom: 1px solid var(--border);
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
 }
 
 .brand {
@@ -341,6 +345,12 @@ input, select, textarea {
   background: color-mix(in srgb, var(--bg-elevated) 92%, transparent);
   backdrop-filter: blur(10px);
   border-top: 1px solid var(--border);
+  /* iOS Safari can visibly lag/wobble a fixed + backdrop-filter element during
+     scroll momentum unless it's forced onto its own compositing layer. */
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
 }
 
 .tab-btn {
@@ -393,6 +403,10 @@ input, select, textarea {
   background: color-mix(in srgb, var(--bg) 90%, transparent);
   backdrop-filter: blur(10px);
   border-bottom: 1px solid var(--border);
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
 }
 
 .overlay-topbar-actions {
